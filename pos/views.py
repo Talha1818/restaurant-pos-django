@@ -170,6 +170,7 @@ def api_orders(request):
     orders = Order.objects.prefetch_related('items__menu_item').select_related('table').order_by('-created_at')[:100]
     result = []
     for o in orders:
+        local_dt = timezone.localtime(o.created_at)
         result.append({
             'id': o.order_number,
             'table': o.table.number if o.table else None,
@@ -181,8 +182,10 @@ def api_orders(request):
             'tax': float(o.tax),
             'total': float(o.total),
             'status': o.status,
-            'time': o.created_at.strftime('%I:%M %p'),
-            'date': o.created_at.strftime('%d %b'),
+            # 'time': o.created_at.strftime('%I:%M %p'),
+            # 'date': o.created_at.strftime('%d %b'),
+            'time': local_dt.strftime('%I:%M %p'),
+            'date': local_dt.strftime('%d %b'),
             'items': [{'name': i.menu_item.name, 'icon': i.menu_item.icon, 'qty': i.quantity, 'price': float(i.unit_price)} for i in o.items.all()],
         })
     return JsonResponse({'orders': result})
@@ -304,8 +307,10 @@ def api_export_orders(request):
     writer.writerow(['Order #', 'Date', 'Time', 'Table', 'Guests', 'Payment', 'Items', 'Subtotal', 'Tax', 'Extra', 'Total', 'Status'])
     for o in orders:
         items_txt = ', '.join(f"{i.menu_item.name} x{i.quantity}" for i in o.items.all())
+        local_dt = timezone.localtime(o.created_at)
         writer.writerow([
-            f"{o.order_number:04d}", o.created_at.strftime('%Y-%m-%d'), o.created_at.strftime('%I:%M %p'),
+            # f"{o.order_number:04d}", o.created_at.strftime('%Y-%m-%d'), o.created_at.strftime('%I:%M %p'),
+            f"{o.order_number:04d}", local_dt.strftime('%Y-%m-%d'), local_dt.strftime('%I:%M %p'),
             o.table.number if o.table else '', o.total_customers, o.payment_method, items_txt,
             o.subtotal, o.tax, o.extra_amount, o.total, o.status,
         ])
