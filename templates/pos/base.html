@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Nawab POS{% endblock %}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="{% static 'pos/css/style.css' %}?v=2">
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+{% comment %} <div class="bg-watermark"></div> {% endcomment %}
+<div class="app">
+  <div class="rail">
+    <a class="rail-logo" href="{% url 'pos:index' %}" title="Nawab Restaurant">
+      <img src="{% static 'pos/images/logo.png' %}" alt="Nawab Restaurant logo" style="width:44px;height:44px;object-fit:contain;object-position:center;border-radius:10px;display:block">
+    </a>
+    <a class="nav-btn {% if active_page == 'pos' %}active{% endif %}" href="{% url 'pos:index' %}">
+      <i class="ti ti-device-desktop"></i><span class="nav-tip">POS</span>
+    </a>
+    <a class="nav-btn {% if active_page == 'orders' %}active{% endif %}" href="{% url 'pos:orders' %}">
+      <i class="ti ti-receipt"></i><span class="nav-tip">Saved Orders</span>
+    </a>
+    <a class="nav-btn {% if active_page == 'tables' %}active{% endif %}" href="{% url 'pos:tables' %}">
+      <i class="ti ti-layout-grid"></i><span class="nav-tip">Tables</span>
+    </a>
+    <div class="rail-sep"></div>
+    <a class="nav-btn {% if active_page == 'admin' %}active{% endif %}" href="{% url 'pos:admin_items' %}">
+      <i class="ti ti-settings"></i><span class="nav-tip">Admin panel</span>
+    </a>
+    <a class="nav-btn {% if active_page == 'reports' %}active{% endif %}" href="{% url 'pos:reports' %}">
+      <i class="ti ti-chart-bar"></i><span class="nav-tip">Reports</span>
+    </a>
+    <div class="rail-spacer"></div>
+    <a class="nav-btn {% if active_page == 'settings' %}active{% endif %}" href="{% url 'pos:settings' %}">
+      <i class="ti ti-adjustments"></i><span class="nav-tip">Settings</span>
+    </a>
+  </div>
+
+  <div class="screen">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal-box">
+    <h3 id="modal-title"></h3>
+    <div id="modal-form"></div>
+    <div class="modal-acts">
+      <button class="m-cancel" id="modal-cancel-btn" onclick="closeModal()">Cancel</button>
+      <button class="m-save" id="modal-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast-msg"></div>
+<div id="print-area"></div>
+
+<script>const CSRF = '{{ csrf_token }}';</script>
+<script src="{% static 'pos/js/common.js' %}?v=2"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,22 @@
+{% extends "pos/base.html" %}
+{% load static %}
+{% block title %}Tables — Nawab{% endblock %}
+{% block content %}
+<div class="topbar">
+  <i class="ti ti-layout-grid" style="font-size:17px;color:var(--ink3)"></i>
+  <span class="topbar-title">Table status</span>
+  <div class="topbar-right">
+    <span class="chip green" id="tbl-free-chip">0 free</span>
+    <span class="chip gold" id="tbl-occ-chip">0 occupied</span>
+    <span class="chip red" id="tbl-res-chip">0 reserved</span>
+    {% include "pos/_user_controls.html" %}
+  </div>
+</div>
+<div style="flex:1;overflow-y:auto;background:var(--paper)">
+  <div class="tbl-stats" id="tbl-stats"></div>
+  <div style="padding:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-content:start" id="table-floor"></div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'pos/js/tables.js' %}?v=2"></script>
+{% endblock %}

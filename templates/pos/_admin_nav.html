@@ -1,0 +1,6 @@
+<div class="admin-nav">
+  <a class="an-btn {% if admin_tab == 'items' %}active{% endif %}" href="{% url 'pos:admin_items' %}"><i class="ti ti-package"></i>Menu items</a>
+  <a class="an-btn {% if admin_tab == 'categories' %}active{% endif %}" href="{% url 'pos:admin_categories' %}"><i class="ti ti-tag"></i>Categories</a>
+  <a class="an-btn {% if admin_tab == 'inventory' %}active{% endif %}" href="{% url 'pos:admin_inventory' %}"><i class="ti ti-box"></i>Inventory</a>
+  <a class="an-btn {% if admin_tab == 'staff' %}active{% endif %}" href="{% url 'pos:admin_staff' %}"><i class="ti ti-users"></i>Staff</a>
+</div>

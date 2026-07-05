@@ -1,0 +1,24 @@
+{% extends "pos/base.html" %}
+{% load static %}
+{% block title %}Categories — Admin — Nawab{% endblock %}
+{% block content %}
+<div class="topbar">
+  <i class="ti ti-settings" style="font-size:17px;color:var(--ink3)"></i>
+  <span class="topbar-title">Admin panel</span>
+  <div class="topbar-right">
+    <span class="chip gold">Manager</span>
+    {% include "pos/_user_controls.html" %}
+  </div>
+</div>
+<div class="admin-layout">
+  {% include "pos/_admin_nav.html" with admin_tab="categories" %}
+  <div class="admin-content" id="admin-content">
+    <div class="section-head"><h2 id="cats-count">Categories</h2>
+      <button class="add-btn" onclick="addCatModal()"><i class="ti ti-plus"></i> Add</button></div>
+    <div class="cat-grid" id="cat-grid"></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'pos/js/admin_categories.js' %}?v=2"></script>
+{% endblock %}

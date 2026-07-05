@@ -1,0 +1,17 @@
+{% extends "pos/base.html" %}
+{% load static %}
+{% block title %}Settings — Nawab{% endblock %}
+{% block content %}
+<div class="topbar">
+  <i class="ti ti-adjustments" style="font-size:17px;color:var(--ink3)"></i>
+  <span class="topbar-title">Settings</span>
+  <div class="topbar-right">
+    <button class="add-btn" onclick="saveSettings()"><i class="ti ti-check"></i> Save</button>
+    {% include "pos/_user_controls.html" %}
+  </div>
+</div>
+<div class="set-layout" id="set-layout"></div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'pos/js/settings.js' %}?v=2"></script>
+{% endblock %}

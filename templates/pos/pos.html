@@ -1,0 +1,70 @@
+{% extends "pos/base.html" %}
+{% load static %}
+{% block title %}POS — Nawab{% endblock %}
+{% block content %}
+<div class="topbar">
+  <i class="ti ti-device-desktop" style="font-size:17px;color:var(--ink3)"></i>
+  <span class="topbar-title">New order</span>
+  <span class="topbar-sub" id="pos-date"></span>
+  <div class="topbar-right">
+    {% include "pos/_user_controls.html" %}
+  </div>
+</div>
+<div class="pos-layout">
+  <div class="pos-left">
+    <div class="cat-scroll" id="cat-pills"></div>
+    <div class="search-row">
+      <div class="search-wrap">
+        <i class="ti ti-search"></i>
+        <input class="search-input" type="text" id="pos-search" placeholder="Search menu..." oninput="renderItems()">
+      </div>
+    </div>
+    <div class="item-grid" id="item-grid"></div>
+  </div>
+  <div class="order-panel">
+    <div class="op-head">
+      <div class="op-head-top">
+        <span class="op-title">Order</span>
+        <span class="chip gold" style="font-size:10px" id="order-count">0 items</span>
+      </div>
+    </div>
+    <div class="op-details">
+      <div class="od-row">
+        <div class="od-field"><label>Table number</label><input type="number" min="1" id="od-table" placeholder="Enter value" oninput="updateOrderMeta()"></div>
+        <div class="od-field"><label>Total customers</label><input type="number" min="2" id="od-cust" placeholder="Enter value" oninput="updateOrderMeta()"></div>
+      </div>
+      <div class="od-row">
+        <div class="od-field">
+          <label>Payment</label>
+          <div class="pay-toggle">
+            <button type="button" class="pay-btn active" id="pay-Cash" onclick="setPayment('Cash')">💵 Cash</button>
+            <button type="button" class="pay-btn" id="pay-Online" onclick="setPayment('Online')">📱 Online</button>
+          </div>
+        </div>
+        <div class="od-field"><label>Extra amount (PKR)</label><input type="number" min="0" id="od-extra" placeholder="0" oninput="updateOrderMeta()"></div>
+      </div>
+    </div>
+    <div class="op-notes">
+      <div class="notes-lbl">📝 SPECIAL NOTES (shown on bill)</div>
+      <textarea class="notes-input" id="order-notes" placeholder="e.g. Extra spicy, no onions..."></textarea>
+    </div>
+    <div class="op-body" id="op-body">
+      <div class="op-empty"><i class="ti ti-shopping-bag"></i><p>Add items from menu</p></div>
+    </div>
+    <div class="op-footer" id="op-footer" style="display:none">
+      <div class="tot-row"><span>Subtotal</span><span id="ft-sub">PKR 0</span></div>
+      <div class="tot-row"><span>Tax (<span id="ft-tax-rate">5</span>%)</span><span id="ft-tax">PKR 0</span></div>
+      <div class="tot-row" id="ft-extra-row" style="display:none"><span>Extra amount</span><span id="ft-extra">PKR 0</span></div>
+      <div class="tot-row final"><span>Total</span><span id="ft-total">PKR 0</span></div>
+      <div class="bill-btns">
+        <button class="bill-btn-save" onclick="saveOrder()"><i class="ti ti-device-floppy" style="font-size:14px;vertical-align:-2px;margin-right:4px"></i>Save</button>
+        <button class="bill-btn-print" onclick="doBill()"><i class="ti ti-printer" style="font-size:14px;vertical-align:-2px;margin-right:4px"></i>Print</button>
+      </div>
+      <span class="clr-link" onclick="clearOrder()">Clear order</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'pos/js/pos.js' %}?v=2"></script>
+{% endblock %}

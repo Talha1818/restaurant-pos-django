@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+*.log
+media/
+
+# Static files (collected, not source)
+/staticfiles/
+
+# PyInstaller build output
+/build/
+/dist/
+*.spec
+
+# Environment / secrets
+.env
+*.env
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# OS files
+Thumbs.db
+desktop.ini

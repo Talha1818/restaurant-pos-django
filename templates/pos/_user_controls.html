@@ -1,0 +1,10 @@
+<div class="theme-switcher" title="Change theme">
+  <i class="ti ti-palette" style="font-size:13px;color:var(--ink3)"></i>
+  <div class="theme-dot t-classic" data-theme="" onclick="setTheme('',this)" title="Classic"></div>
+  <div class="theme-dot t-ocean" data-theme="theme-ocean" onclick="setTheme('theme-ocean',this)" title="Ocean"></div>
+  <div class="theme-dot t-forest" data-theme="theme-forest" onclick="setTheme('theme-forest',this)" title="Forest"></div>
+  <div class="theme-dot t-royal" data-theme="theme-royal" onclick="setTheme('theme-royal',this)" title="Royal"></div>
+  <div class="theme-dot t-crimson" data-theme="theme-crimson" onclick="setTheme('theme-crimson',this)" title="Crimson"></div>
+</div>
+<span class="user-badge"><i class="ti ti-user" style="font-size:13px"></i> {{ request.user.username }}{% if request.user.is_staff %} <span class="badge-admin">Admin</span>{% endif %}</span>
+<a href="{% url 'pos:logout' %}" class="chip"><i class="ti ti-logout" style="font-size:12px"></i> Logout</a>

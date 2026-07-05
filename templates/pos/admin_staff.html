@@ -1,0 +1,30 @@
+{% extends "pos/base.html" %}
+{% load static %}
+{% block title %}Staff — Admin — Nawab{% endblock %}
+{% block content %}
+<div class="topbar">
+  <i class="ti ti-settings" style="font-size:17px;color:var(--ink3)"></i>
+  <span class="topbar-title">Admin panel</span>
+  <div class="topbar-right">
+    <span class="chip gold">Manager</span>
+    {% include "pos/_user_controls.html" %}
+  </div>
+</div>
+<div class="admin-layout">
+  {% include "pos/_admin_nav.html" with admin_tab="staff" %}
+  <div class="admin-content" id="admin-content">
+    <div class="section-head"><h2 id="staff-count">Staff</h2>
+      <button class="add-btn" onclick="addStaffModal()"><i class="ti ti-plus"></i> Add staff</button></div>
+    <div class="search-wrap" style="margin-bottom:12px;max-width:280px">
+      <i class="ti ti-search"></i>
+      <input class="search-input" type="text" id="staff-search" placeholder="Search staff..." oninput="renderStaffTable()">
+    </div>
+    <table class="data-table"><thead><tr><th>Name</th><th style="width:80px">Role</th><th style="width:75px">Shift</th><th style="width:80px">Phone</th><th style="width:60px">Admin</th><th style="width:75px">Actions</th></tr></thead>
+      <tbody id="staff-tbody"></tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'pos/js/admin_staff.js' %}?v=2"></script>
+{% endblock %}

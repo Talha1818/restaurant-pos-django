@@ -1,0 +1,31 @@
+{% extends "pos/base.html" %}
+{% load static %}
+{% block title %}Saved Orders — Nawab{% endblock %}
+{% block content %}
+<div class="topbar">
+  <i class="ti ti-receipt" style="font-size:17px;color:var(--ink3)"></i>
+  <span class="topbar-title">Saved Orders</span>
+  <div class="topbar-right">
+    <span class="chip" id="ord-pending-chip">0 pending</span>
+    <span class="chip green" id="ord-done-chip">0 done</span>
+    <button class="chip gold" onclick="exportModal()"><i class="ti ti-file-spreadsheet" style="font-size:12px"></i> Export to Excel</button>
+    {% include "pos/_user_controls.html" %}
+  </div>
+</div>
+<div style="padding:12px 14px 0">
+  <div class="search-wrap" style="max-width:320px">
+    <i class="ti ti-search"></i>
+    <input class="search-input" type="text" id="ord-search" placeholder="Search by order #, table, item, payment..." oninput="renderOrders()">
+  </div>
+</div>
+<div class="ord-layout" id="ord-layout">
+  <div class="ord-empty">
+    <i class="ti ti-receipt-off" style="font-size:40px;color:var(--line2)"></i>
+    <p style="font-size:13px">No saved orders yet</p>
+    <p style="font-size:11px;color:var(--ink3)">Save an order from POS to see it here</p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'pos/js/orders.js' %}?v=2"></script>
+{% endblock %}

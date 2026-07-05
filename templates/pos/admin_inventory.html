@@ -1,0 +1,31 @@
+{% extends "pos/base.html" %}
+{% load static %}
+{% block title %}Inventory — Admin — Nawab{% endblock %}
+{% block content %}
+<div class="topbar">
+  <i class="ti ti-settings" style="font-size:17px;color:var(--ink3)"></i>
+  <span class="topbar-title">Admin panel</span>
+  <div class="topbar-right">
+    <span class="chip gold">Manager</span>
+    {% include "pos/_user_controls.html" %}
+  </div>
+</div>
+<div class="admin-layout">
+  {% include "pos/_admin_nav.html" with admin_tab="inventory" %}
+  <div class="admin-content" id="admin-content">
+    <div class="section-head"><h2 id="inv-count">Inventory — raw stock</h2>
+      <button class="add-btn" onclick="addIngredientModal()"><i class="ti ti-plus"></i> Add ingredient</button></div>
+    <div class="section-note">Meat (chicken/beef/mutton) is tracked in kg. You can add your own custom ingredients, edit stock, or remove one entirely.</div>
+    <div class="search-wrap" style="margin-bottom:12px;max-width:280px">
+      <i class="ti ti-search"></i>
+      <input class="search-input" type="text" id="inv-search" placeholder="Search ingredients..." oninput="renderInventoryTable()">
+    </div>
+    <table class="data-table"><thead><tr><th>Ingredient</th><th style="width:90px">Stock</th><th style="width:150px">Status</th><th style="width:190px">Add stock</th><th style="width:80px">Actions</th></tr></thead>
+      <tbody id="inv-tbody"></tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'pos/js/admin_inventory.js' %}?v=2"></script>
+{% endblock %}

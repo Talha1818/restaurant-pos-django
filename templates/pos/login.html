@@ -1,0 +1,172 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — Nawab Restaurant POS</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:system-ui,-apple-system,sans-serif;background:#FBF6EC;overflow:hidden}
+
+.wrap{display:grid;grid-template-columns:1fr 1fr;height:100vh;min-height:600px}
+
+/* LEFT — brand panel */
+.brand-panel{background:#2B0A28;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:56px 56px 44px;color:#F7EFDC}
+.brand-panel::before{content:'';position:absolute;top:-120px;right:-120px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(212,175,55,0.14),transparent 70%)}
+.brand-panel::after{content:'';position:absolute;bottom:-160px;left:-100px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(196,30,92,0.10),transparent 70%)}
+.brand-top{position:relative;z-index:1;display:flex;align-items:center;gap:14px;animation:fadeSlideDown 0.6s ease both}
+.brand-top img{width:56px;height:56px;object-fit:cover;border-radius:12px;box-shadow:0 0 0 2px #D4AF37}
+.brand-name{font-size:19px;font-weight:600;letter-spacing:0.3px}
+.brand-sub{font-size:11px;color:#a3899d;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+
+.brand-mid{position:relative;z-index:1;animation:fadeSlideUp 0.7s ease 0.1s both}
+.brand-mid h1{font-size:32px;font-weight:600;line-height:1.35;margin-bottom:14px}
+.brand-mid h1 span{color:#D4AF37}
+.brand-mid p{font-size:14px;color:#c7b6c2;line-height:1.7;max-width:380px}
+
+.feature-list{position:relative;z-index:1;display:flex;flex-direction:column;gap:16px;margin-top:36px;animation:fadeSlideUp 0.7s ease 0.25s both}
+.feature-item{display:flex;align-items:center;gap:12px}
+.feature-icon{width:36px;height:36px;border-radius:10px;background:rgba(212,175,55,0.14);display:flex;align-items:center;justify-content:center;color:#D4AF37;font-size:17px;flex-shrink:0}
+.feature-text p{font-size:13px;font-weight:500;color:#F7EFDC}
+.feature-text span{font-size:11.5px;color:#a3899d}
+
+.brand-foot{position:relative;z-index:1;font-size:11px;color:#7a677a;animation:fadeIn 1s ease 0.4s both}
+
+/* RIGHT — form panel */
+.form-panel{background:#fff;display:flex;align-items:center;justify-content:center;padding:40px}
+.form-box{width:100%;max-width:360px;animation:fadeSlideUp 0.6s ease 0.1s both}
+.form-head{margin-bottom:30px}
+.form-head h2{font-size:24px;font-weight:600;color:#2B0A28;margin-bottom:6px}
+.form-head p{font-size:13.5px;color:#8a7a86}
+
+.alert{display:flex;align-items:center;gap:8px;background:#FBEAE8;border:1px solid #f1c9c4;color:#C0392B;font-size:12.5px;border-radius:10px;padding:11px 14px;margin-bottom:18px;animation:shake 0.4s ease}
+
+.field{margin-bottom:18px}
+.field label{display:block;font-size:11.5px;font-weight:600;color:#8a7a86;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:7px}
+.input-wrap{position:relative;display:flex;align-items:center}
+.input-wrap i.ti-lead{position:absolute;left:14px;font-size:17px;color:#b3a3ae;pointer-events:none}
+.input-wrap input{width:100%;border:1.5px solid #ece4ea;border-radius:10px;padding:12px 14px 12px 42px;font-size:14px;color:#2B0A28;background:#FCFAF7;transition:all 0.15s;font-family:inherit}
+.input-wrap input:focus{outline:none;border-color:#D4AF37;background:#fff;box-shadow:0 0 0 3px rgba(212,175,55,0.12)}
+.toggle-eye{position:absolute;right:12px;background:none;border:none;cursor:pointer;color:#b3a3ae;font-size:17px;padding:4px;display:flex}
+.toggle-eye:hover{color:#2B0A28}
+
+.row-between{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.remember{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#6b5763;cursor:pointer;user-select:none}
+.remember input{width:15px;height:15px;accent-color:#D4AF37;cursor:pointer}
+
+.submit-btn{width:100%;background:#2B0A28;color:#D4AF37;border:none;border-radius:10px;padding:13px 0;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.submit-btn:hover{background:#3d1338}
+.submit-btn:active{transform:scale(0.98)}
+.submit-btn .spinner{width:15px;height:15px;border:2px solid rgba(212,175,55,0.35);border-top-color:#D4AF37;border-radius:50%;animation:spin 0.7s linear infinite;display:none}
+.submit-btn.loading .spinner{display:inline-block}
+.submit-btn.loading .btn-label{opacity:0.7}
+
+.form-foot{text-align:center;font-size:11.5px;color:#b3a3ae;margin-top:28px}
+
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeSlideDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media (max-width:820px){
+  .wrap{grid-template-columns:1fr}
+  .brand-panel{display:none}
+  .form-panel{padding:24px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand-panel">
+    <div class="brand-top">
+      <img src="{% static 'pos/images/logo.png' %}" alt="Nawab Restaurant logo">
+      <div>
+        <div class="brand-name">Nawab Restaurant</div>
+        <div class="brand-sub">POS System</div>
+      </div>
+    </div>
+
+    <div class="brand-mid">
+      <h1>Serving royal <span>hospitality</span>,<br>one order at a time.</h1>
+      <p>Manage your menu, tables, staff and sales — all from one elegant dashboard built for your restaurant floor.</p>
+
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-icon"><i class="ti ti-device-desktop"></i></div>
+          <div class="feature-text"><p>Fast, intuitive billing</p><span>Take orders and print bills in seconds</span></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon"><i class="ti ti-box"></i></div>
+          <div class="feature-text"><p>Live inventory tracking</p><span>Stock updates automatically as you sell</span></div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon"><i class="ti ti-chart-bar"></i></div>
+          <div class="feature-text"><p>Real-time sales reports</p><span>Know exactly how your day is going</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="brand-foot">&copy; 2024 Nawab Restaurant. All rights reserved.</div>
+  </div>
+
+  <div class="form-panel">
+    <div class="form-box">
+      <div class="form-head">
+        <h2>Welcome back</h2>
+        <p>Sign in to continue to your dashboard</p>
+      </div>
+
+      {% if error %}
+      <div class="alert"><i class="ti ti-alert-circle"></i> {{ error }}</div>
+      {% endif %}
+
+      <form method="post" id="login-form">
+        {% csrf_token %}
+        <div class="field">
+          <label>Username</label>
+          <div class="input-wrap">
+            <i class="ti ti-user ti-lead"></i>
+            <input type="text" name="username" autofocus required autocomplete="username">
+          </div>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="input-wrap">
+            <i class="ti ti-lock ti-lead"></i>
+            <input type="password" name="password" id="pw-input" required autocomplete="current-password" style="padding-right:42px">
+            <button type="button" class="toggle-eye" id="pw-toggle" aria-label="Show password"><i class="ti ti-eye"></i></button>
+          </div>
+        </div>
+        <div class="row-between">
+          <label class="remember"><input type="checkbox" name="remember"> Remember me</label>
+        </div>
+        <button type="submit" class="submit-btn" id="submit-btn">
+          <span class="spinner"></span>
+          <span class="btn-label">Sign in</span>
+        </button>
+      </form>
+
+      <div class="form-foot">Ask your manager if you don't have login credentials.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('pw-toggle').addEventListener('click', function() {
+  const pw = document.getElementById('pw-input');
+  const icon = this.querySelector('i');
+  const showing = pw.type === 'text';
+  pw.type = showing ? 'password' : 'text';
+  icon.className = showing ? 'ti ti-eye' : 'ti ti-eye-off';
+  this.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+});
+document.getElementById('login-form').addEventListener('submit', function() {
+  document.getElementById('submit-btn').classList.add('loading');
+});
+</script>
+</body>
+</html>
