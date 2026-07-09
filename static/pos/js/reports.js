@@ -138,6 +138,7 @@
 let currentPeriod = 'today';
 let customFrom = '', customTo = '';
 const PAY_COLORS = { Cash: 'var(--gold)', Online: 'var(--teal)' };
+const TYPE_COLORS = { 'Walk in': 'var(--blue)', 'Delivery': 'var(--red)', 'Takeaway': 'var(--green)' };
 const STATUS_COLORS = { done: 'var(--green)', pending: 'var(--gold)', cancelled: 'var(--red)' };
 
 function repFilter(period, btn) {
@@ -222,6 +223,7 @@ function renderReports(r) {
   }
 
   const paymentDonut = donut(Object.entries(r.payments), PAY_COLORS, { Cash: '💵', Online: '📱' });
+  const typeDonut = donut(Object.entries(r.order_types || {}), TYPE_COLORS, { 'Walk in': '🪑', 'Delivery': '🛵', 'Takeaway': '🥡' });
   const statusDonut = donut(Object.entries(r.order_status), STATUS_COLORS, { done: '✅', pending: '⏳', cancelled: '❌' });
 
   const recentRows = r.recent_orders.length ? r.recent_orders.map(o => `
@@ -261,6 +263,12 @@ function renderReports(r) {
         <div class="rep-card-title">Payment methods</div>
         ${paymentDonut}
       </div>
+      <div class="rep-card">
+        <div class="rep-card-title">Order type</div>
+        ${typeDonut}
+      </div>
+    </div>
+    <div class="rep-grid">
       <div class="rep-card">
         <div class="rep-card-title">Orders by status</div>
         ${statusDonut}

@@ -43,6 +43,16 @@
         </div>
         <div class="od-field"><label>Extra amount (PKR)</label><input type="number" min="0" id="od-extra" placeholder="0" oninput="updateOrderMeta()"></div>
       </div>
+      <div class="od-row">
+        <div class="od-field" style="grid-column:span 2">
+          <label>Order type</label>
+          <div class="pay-toggle">
+            <button type="button" class="pay-btn active" id="otype-Walk in" onclick="setOrderType('Walk in')">🪑 Walk in</button>
+            <button type="button" class="pay-btn" id="otype-Delivery" onclick="setOrderType('Delivery')">🛵 Delivery</button>
+            <button type="button" class="pay-btn" id="otype-Takeaway" onclick="setOrderType('Takeaway')">🥡 Takeaway</button>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="op-notes">
       <div class="notes-lbl">📝 SPECIAL NOTES (shown on bill)</div>

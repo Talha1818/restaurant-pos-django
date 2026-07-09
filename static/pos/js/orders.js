@@ -5,6 +5,7 @@ let editOrderState = null; // { orderId, order: {id: {item,qty}}, table, cust, p
 async function loadOrders() {
   const r = await apiFetch('/api/orders/');
   savedOrders = r.orders || [];
+  console.log(savedOrders[0]); // ADD THIS
   renderOrders();
 }
 
@@ -71,7 +72,10 @@ function viewOrderCard(id) {
         ${b.phone ? `<div style="font-size:10.5px;color:var(--ink3)">${b.phone}</div>` : ''}
         <div style="font-size:11px;margin-top:6px">Table <strong>${o.table || '—'}</strong> &nbsp;·&nbsp; ${o.date} ${o.time}</div>
         <div style="font-size:11px;color:var(--ink3)">Order #${String(o.id).padStart(4, '0')} &nbsp;·&nbsp; ${o.cust || 1} guest${(o.cust || 1) > 1 ? 's' : ''} &nbsp;·&nbsp; ${o.payment === 'Cash' ? '💵' : '📱'} ${o.payment}</div>
+
+        ${o.cashier ? `<div style="font-size:11px;color:var(--ink3)">Cashier: <strong>${o.cashier}</strong></div>` : ''}
       </div>
+
       <div style="margin-bottom:8px">${rows}</div>
       ${o.notes ? `<div style="padding:7px 9px;background:var(--gold-light);border-radius:7px;font-size:11px;color:var(--ink2);margin-bottom:8px">📝 <em>${o.notes}</em></div>` : ''}
       <div class="receipt-total">
@@ -89,6 +93,8 @@ function printOrder(id) {
   printReceipt(receiptHTML({
     id: o.id, table: o.table, cust: o.cust, payment: o.payment, notes: o.notes,
     items: o.items, sub: o.sub, tax: o.tax, extra: o.extra, total: o.total, date: o.date, time: o.time,
+    
+    cashier: o.cashier || CASHIER,
   }));
 }
 
@@ -115,7 +121,7 @@ async function editOrderModal(id) {
     const menuItem = menuForEdit.items.find(m => m.name === it.name);
     if (menuItem) orderMap[menuItem.id] = { item: menuItem, qty: it.qty };
   });
-  editOrderState = { orderId: id, order: orderMap, table: o.table || '', cust: o.cust || 1, payment: o.payment, extra: o.extra || 0, notes: o.notes || '' };
+  editOrderState = { orderId: id, order: orderMap, table: o.table || '', cust: o.cust || 1, payment: o.payment, order_type: o.order_type || 'Walk in', extra: o.extra || 0, notes: o.notes || '' };
   renderEditModal();
 }
 function renderEditModal() {
@@ -141,8 +147,13 @@ function renderEditModal() {
     </div>
     <div class="form-2col">
       <div class="form-row"><label>Payment</label><select id="e-payment"><option ${s.payment === 'Cash' ? 'selected' : ''}>Cash</option><option ${s.payment === 'Online' ? 'selected' : ''}>Online</option></select></div>
-      <div class="form-row"><label>Extra (PKR)</label><input id="e-extra" type="number" value="${s.extra}"></div>
+      <div class="form-row"><label>Order type</label><select id="e-order-type">
+        <option value="Walk in" ${s.order_type === 'Walk in' ? 'selected' : ''}>🪑 Walk in</option>
+        <option value="Delivery" ${s.order_type === 'Delivery' ? 'selected' : ''}>🛵 Delivery</option>
+        <option value="Takeaway" ${s.order_type === 'Takeaway' ? 'selected' : ''}>🥡 Takeaway</option>
+      </select></div>
     </div>
+    <div class="form-row"><label>Extra (PKR)</label><input id="e-extra" type="number" value="${s.extra}"></div>
     <div class="form-row"><label>Notes</label><textarea id="e-notes" rows="2">${s.notes}</textarea></div>
     <div class="form-row"><label>Items</label></div>
     <div id="edit-items-list">${rows}</div>
@@ -174,11 +185,12 @@ function editAddItem() {
   renderEditModal();
 }
 function syncEditMetaFromForm() {
-  const t = document.getElementById('e-table'), c = document.getElementById('e-cust'), p = document.getElementById('e-payment'), ex = document.getElementById('e-extra'), n = document.getElementById('e-notes');
+  const t = document.getElementById('e-table'), c = document.getElementById('e-cust'), p = document.getElementById('e-payment'), ot = document.getElementById('e-order-type'), ex = document.getElementById('e-extra'), n = document.getElementById('e-notes');
   if (!t) return;
   editOrderState.table = parseInt(t.value) || '';
   editOrderState.cust = parseInt(c.value) || 1;
   editOrderState.payment = p.value;
+  editOrderState.order_type = ot ? ot.value : editOrderState.order_type;
   editOrderState.extra = parseFloat(ex.value) || 0;
   editOrderState.notes = n.value;
 }
@@ -193,7 +205,7 @@ async function saveEditedOrder() {
   const tax = Math.round(sub * rate);
   const total = sub + tax + (s.extra || 0);
   const r = await apiFetch(`/api/orders/${s.orderId}/edit/`, 'POST', {
-    table: s.table, cust: s.cust, payment: s.payment, extra: s.extra, notes: s.notes, sub, tax, total, items,
+    table: s.table, cust: s.cust, payment: s.payment, order_type: s.order_type, extra: s.extra, notes: s.notes, sub, tax, total, items,
   });
   if (r.success) { showToast('Order updated'); closeModal(); loadOrders(); }
   else showToast(r.error || 'Could not update order');
@@ -202,11 +214,14 @@ async function saveEditedOrder() {
 /* ─── EXPORT TO EXCEL ─── */
 function exportModal() {
   openModal('Export to Excel', `
-    <div style="font-size:12.5px;color:var(--ink2);margin-bottom:14px">Download a spreadsheet (CSV, opens directly in Excel) of every saved order for the selected day.</div>
-    <div class="form-row"><label>Which day?</label>
+    <div style="font-size:12.5px;color:var(--ink2);margin-bottom:14px">Download a spreadsheet (CSV, opens directly in Excel) of saved orders.</div>
+    <div class="form-row"><label>Period</label>
       <select id="exp-range">
         <option value="today">Today</option>
         <option value="yesterday">Yesterday</option>
+        <option value="this_month">This Month</option>
+        <option value="last_month">Last Month</option>
+        <option value="all">All Orders</option>
       </select>
     </div>`, () => {
     const range = document.getElementById('exp-range').value;

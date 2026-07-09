@@ -19,6 +19,9 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
 
+    # License
+    path('license/', views.license_page, name='license_page'),
+
     # API
     path('api/menu/', views.api_menu, name='api_menu'),
     path('api/orders/', views.api_orders, name='api_orders'),

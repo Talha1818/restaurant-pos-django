@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 class Category(models.Model):
     name = models.CharField(max_length=100)
     icon = models.CharField(max_length=10, default='🍽')
+    image = models.ImageField(upload_to='categories/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -31,7 +32,8 @@ class MenuItem(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='items')
     price = models.DecimalField(max_digits=10, decimal_places=2)
     icon = models.CharField(max_length=10, default='🍽')
-    fallback_stock = models.IntegerField(default=20)
+    image = models.ImageField(upload_to='menu_items/', blank=True, null=True)
+    fallback_stock = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -75,11 +77,13 @@ class Table(models.Model):
 class Order(models.Model):
     STATUS_CHOICES = [('pending','Pending'),('done','Done'),('cancelled','Cancelled')]
     PAYMENT_CHOICES = [('Cash','Cash'),('Online','Online')]
+    ORDER_TYPE_CHOICES = [('Walk in','Walk in'),('Delivery','Delivery'),('Takeaway','Takeaway')]
 
     order_number = models.AutoField(primary_key=True)
     table = models.ForeignKey(Table, on_delete=models.SET_NULL, null=True, blank=True)
     total_customers = models.IntegerField(default=1)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='Cash')
+    order_type = models.CharField(max_length=20, choices=ORDER_TYPE_CHOICES, default='Walk in')
     extra_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     special_notes = models.TextField(blank=True)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)

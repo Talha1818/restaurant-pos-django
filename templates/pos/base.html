@@ -27,7 +27,7 @@
     </a>
     <div class="rail-sep"></div>
     <a class="nav-btn {% if active_page == 'admin' %}active{% endif %}" href="{% url 'pos:admin_items' %}">
-      <i class="ti ti-settings"></i><span class="nav-tip">Admin panel</span>
+      <i class="ti ti-shield-cog"></i><span class="nav-tip">Admin panel</span>
     </a>
     <a class="nav-btn {% if active_page == 'reports' %}active{% endif %}" href="{% url 'pos:reports' %}">
       <i class="ti ti-chart-bar"></i><span class="nav-tip">Reports</span>
@@ -38,9 +38,39 @@
     </a>
   </div>
 
-  <div class="screen">
+
+  {% comment %} <div class="screen">
+    {% if license_days_left is not None and license_days_left <= 2 %}
+    <div style="background:#FBEAE8;color:#a02a1f;font-size:12px;padding:8px 16px;text-align:center;border-bottom:1px solid #f1c9c4">
+      <i class="ti ti-alert-triangle" style="vertical-align:-2px;margin-right:4px"></i>
+      {% if license_days_left <= 0 %}Your license has expired.{% else %}Your license expires in {{ license_days_left }} day{{ license_days_left|pluralize }}.{% endif %}
+      Contact your software provider to renew.
+    </div>
+    {% endif %}
     {% block content %}{% endblock %}
-  </div>
+</div> {% endcomment %}
+
+
+<div class="screen">
+    {% if license_days_left is not None and license_days_left <= 6 %}
+    <div style="background:#FBEAE8;color:#a02a1f;font-size:12px;padding:8px 16px;text-align:center;border-bottom:1px solid #f1c9c4">
+      <i class="ti ti-alert-triangle" style="vertical-align:-2px;margin-right:4px"></i>
+
+      {% if license_days_left <= 0 %}
+        <strong>License Expired</strong> — Your license has expired. Please contact your software provider.
+        <br>
+        <strong>لائسنس ختم ہو گیا ہے۔</strong> براہِ کرم نیا لائسنس لینے کے لیے اپنے سافٹ ویئر فراہم کنندہ سے رابطہ کریں۔
+      {% else %}
+        <strong>License Notice</strong> — Your license will expire in {{ license_days_left }} day{{ license_days_left|pluralize }}. Please contact your software provider.
+        <br>
+        <strong>اطلاع:</strong> آپ کا لائسنس {{ license_days_left }} دن میں ختم ہو جائے گا۔ براہِ کرم نیا لائسنس لینے کے لیے اپنے سافٹ ویئر فراہم کنندہ سے رابطہ کریں۔
+      {% endif %}
+
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+</div>
+
 </div>
 
 <!-- MODAL -->
@@ -59,6 +89,13 @@
 
 <script>const CSRF = '{{ csrf_token }}';</script>
 <script src="{% static 'pos/js/common.js' %}?v=2"></script>
+
+
+<script>
+  window.CASHIER_NAME = "{{ request.user.get_full_name|default:request.user.username }}";
+</script>
+
+
 {% block extra_js %}{% endblock %}
 </body>
 </html>

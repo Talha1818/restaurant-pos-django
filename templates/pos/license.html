@@ -1,0 +1,84 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>License — Nawab Restaurant POS</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:system-ui,-apple-system,sans-serif;background:#FBF6EC;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.box{width:100%;max-width:420px;background:#fff;border-radius:16px;padding:36px;box-shadow:0 20px 60px rgba(43,10,40,0.10)}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:26px}
+.logo img{width:44px;height:44px;object-fit:cover;border-radius:10px;box-shadow:0 0 0 2px #D4AF37}
+.logo-name{font-size:16px;font-weight:600;color:#2B0A28}
+.logo-sub{font-size:10.5px;color:#a3899d;letter-spacing:1.5px;text-transform:uppercase}
+
+.status{display:flex;align-items:flex-start;gap:10px;border-radius:12px;padding:14px 16px;margin-bottom:22px;font-size:13px;line-height:1.5}
+.status.bad{background:#FBEAE8;color:#a02a1f;border:1px solid #f1c9c4}
+.status.good{background:#EAF5EE;color:#1f7a46;border:1px solid #bfe3cc}
+.status i{font-size:18px;margin-top:1px;flex-shrink:0}
+
+h1{font-size:19px;font-weight:600;color:#2B0A28;margin-bottom:6px}
+p.sub{font-size:13px;color:#8a7a86;margin-bottom:22px;line-height:1.6}
+
+.field label{display:block;font-size:11px;font-weight:600;color:#8a7a86;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:7px}
+textarea{width:100%;border:1.5px solid #ece4ea;border-radius:10px;padding:12px 14px;font-size:12.5px;font-family:ui-monospace,monospace;color:#2B0A28;background:#FCFAF7;resize:vertical;min-height:90px}
+textarea:focus{outline:none;border-color:#D4AF37;background:#fff;box-shadow:0 0 0 3px rgba(212,175,55,0.12)}
+
+.error-msg{color:#C0392B;font-size:12px;margin-top:8px}
+
+.submit-btn{width:100%;background:#2B0A28;color:#D4AF37;border:none;border-radius:10px;padding:13px 0;font-size:14px;font-weight:600;cursor:pointer;margin-top:16px}
+.submit-btn:hover{background:#3d1338}
+.submit-btn:active{transform:scale(0.98)}
+
+.meta{margin-top:20px;padding-top:18px;border-top:1px solid #f1ece9;font-size:12px;color:#8a7a86}
+.meta div{display:flex;justify-content:space-between;padding:3px 0}
+.meta strong{color:#2B0A28}
+
+.foot{text-align:center;font-size:11px;color:#b3a3ae;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">
+    <img src="{% static 'pos/images/logo.png' %}" alt="Nawab Restaurant logo">
+    <div>
+      <div class="logo-name">Nawab Restaurant</div>
+      <div class="logo-sub">POS System</div>
+    </div>
+  </div>
+
+  {% if valid %}
+    <div class="status good"><i class="ti ti-circle-check"></i><div>License active{% if days_left is not None %} — {{ days_left }} day{{ days_left|pluralize }} remaining.{% endif %}</div></div>
+    <h1>Your license is active</h1>
+    <p class="sub">Everything is working normally. You can close this page.</p>
+    <a href="{% url 'pos:index' %}" class="submit-btn" style="display:block;text-align:center;text-decoration:none;line-height:1.6">Go to POS</a>
+  {% else %}
+    <div class="status bad"><i class="ti ti-alert-triangle"></i><div>{{ error }}</div></div>
+    <h1>Activate your license</h1>
+    <p class="sub">Paste the license key you received to continue using this application.</p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="field">
+        <label>License key</label>
+        <textarea name="license_key" placeholder="Paste your license key here" required></textarea>
+      </div>
+      {% if message %}<div class="error-msg">{{ message }}</div>{% endif %}
+      <button type="submit" class="submit-btn">Activate</button>
+    </form>
+    {% if payload %}
+    <div class="meta">
+      <div><span>Licensed to</span><strong>{{ payload.client }}</strong></div>
+      <div><span>License ID</span><strong>{{ payload.id }}</strong></div>
+      <div><span>Expired on</span><strong>{{ payload.expires }}</strong></div>
+    </div>
+    {% endif %}
+  {% endif %}
+
+  <div class="foot">Need a license or renewal? Contact your software provider.<br>Whatsapp At: <strong>+92 344 4300394.</strong></div>
+</div>
+</body>
+</html>

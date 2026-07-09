@@ -1,3 +1,5 @@
+const CASHIER = window.CASHIER_NAME || '';
+
 /* ─── COMMON: CSRF / fetch helper ─── */
 function getCookie(name) {
   let value = null;
@@ -15,6 +17,16 @@ async function apiFetch(url, method = 'GET', body = null) {
   const opts = { method, headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN } };
   if (body) opts.body = JSON.stringify(body);
   const r = await fetch(url, opts);
+  return r.json();
+}
+
+// For file uploads (multipart FormData) — do NOT set Content-Type manually
+async function apiFetchForm(url, formData) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF_TOKEN },
+    body: formData,
+  });
   return r.json();
 }
 
@@ -61,7 +73,7 @@ function printReceipt(innerHTML) {
   area.innerHTML = innerHTML;
   setTimeout(() => window.print(), 50);
 }
-function receiptHTML({ id, table, cust, payment, notes, items, sub, tax, extra, total, date, time, restaurant }) {
+function receiptHTML({ id, table, cust, payment, notes, items, sub, tax, extra, total, date, time, restaurant, cashier }) {
   const rows = items.map(it => `<div class="pr-row"><span>${it.icon || ''} ${it.name} ×${it.qty}</span><span>PKR ${(it.price * it.qty).toLocaleString()}</span></div>`).join('');
   const b = restaurant || BRAND;
   return `<div class="pr-header">
@@ -71,13 +83,13 @@ function receiptHTML({ id, table, cust, payment, notes, items, sub, tax, extra, 
       ${b.phone ? `<div style="font-size:9px;color:#666">${b.phone}</div>` : ''}
       <div style="font-size:10.5px;margin-top:5px">Table <strong>${table || '—'}</strong> &nbsp;·&nbsp; ${date || ''} ${time || ''}</div>
       <div style="font-size:9.5px;color:#555">Order #${String(id).padStart(4, '0')} &nbsp;·&nbsp; ${cust || 1} guest${(cust || 1) > 1 ? 's' : ''} &nbsp;·&nbsp; ${payment === 'Cash' ? '💵' : '📱'} ${payment}</div>
+      ${cashier ? `<div style="font-size:9.5px;color:#555;margin-top:2px">Cashier: <strong>${cashier}</strong></div>` : ''}
     </div>
     ${rows}
     ${notes ? `<div style="margin-top:6px;font-size:10px"><em>📝 ${notes}</em></div>` : ''}
     <div class="pr-total">
       <div class="pr-row"><span>Subtotal</span><span>PKR ${sub.toLocaleString()}</span></div>
       <div class="pr-row"><span>Tax</span><span>PKR ${tax.toLocaleString()}</span></div>
-      ${extra ? `<div class="pr-row"><span>Extra</span><span>PKR ${extra.toLocaleString()}</span></div>` : ''}
       <div class="pr-row" style="font-size:13px;font-weight:700"><span>Total</span><span>PKR ${total.toLocaleString()}</span></div>
     </div>
     <div class="pr-footer">Thank you for dining with us! 🙏</div>`;

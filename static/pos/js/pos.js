@@ -1,10 +1,10 @@
-let menuData = { categories: [], items: [], ingredients: [], tax_rate: 5 };
+let menuData = { categories: [], items: [], ingredients: [], tax_rate: 5, cashier: '' };
 if (!sessionStorage.getItem('nawab_defaults_v2')) {
   sessionStorage.removeItem('nawab_order_meta');
   sessionStorage.setItem('nawab_defaults_v2', '1');
 }
 let order = JSON.parse(sessionStorage.getItem('nawab_order') || '{}');
-let orderMeta = JSON.parse(sessionStorage.getItem('nawab_order_meta') || '{"table":1,"cust":2,"payment":"Cash","extra":0}');
+let orderMeta = JSON.parse(sessionStorage.getItem('nawab_order_meta') || '{"table":1,"cust":2,"payment":"Cash","order_type":"Walk in","extra":0}');
 let orderNotes = sessionStorage.getItem('nawab_order_notes') || '';
 let activeCat = 'all';
 
@@ -26,6 +26,7 @@ function initPOS() {
   document.getElementById('order-notes').value = orderNotes;
   document.getElementById('ft-tax-rate').textContent = menuData.tax_rate ?? 5;
   setPayment(orderMeta.payment || 'Cash');
+  setOrderType(orderMeta.order_type || 'Walk in');
   renderCats();
   renderItems();
   renderOrder();
@@ -59,16 +60,27 @@ function renderItems() {
   grid.innerHTML = filtered.map(i => {
     const inOrder = order[i.id] ? order[i.id].qty : 0;
     const lowStk = i.stock < 10;
-    return `<div class="item-card" onclick="addItem(${i.id})">
-      <div class="item-img" style="background:${catColor(i.cat)}">${i.icon}${inOrder > 0 ? `<span style="position:absolute;top:5px;right:7px;background:var(--rail-bg);color:var(--rail-active);border-radius:10px;font-size:10px;padding:1px 6px;font-weight:500">${inOrder}</span>` : ''}</div>
-      <div class="item-body">
-        <div class="item-name">${i.name}</div>
-        <div class="item-price">PKR ${i.price.toLocaleString()}</div>
-        <div class="item-footer">
-          <span class="item-stock" style="color:${lowStk ? 'var(--red)' : 'var(--ink3)'}">${i.stock === null ? '' : (lowStk ? '⚠ ' : '') + i.stock + ' left'}</span>
-        </div>
-      </div>
-    </div>`;
+    const imgContent = i.image_url
+  ? `<img src="${i.image_url}" alt="${i.name}" style="width:100%;height:100%;object-fit:cover;display:block">`
+  : `<span style="font-size:42px">${i.icon}</span>`;
+
+return `<div class="item-card" onclick="addItem(${i.id})">
+  <div class="item-img">
+    ${imgContent}
+    <div class="item-price-badge">PKR ${i.price.toLocaleString()}</div>
+    ${inOrder > 0 ? `<div class="item-qty-dot">${inOrder}</div>` : ''}
+  </div>
+  <div class="item-body">
+    <div class="item-name">${i.name}</div>
+    <div class="item-footer">
+      ${i.stock >= 10
+        ? `<span class="item-stock stock-ok">${i.stock} left</span>`
+        : i.stock > 0
+        ? `<span class="item-stock stock-low">⚠ ${i.stock} left</span>`
+        : `<span class="item-stock stock-none">—</span>`}
+    </div>
+  </div>
+</div>`;
   }).join('');
 }
 function addItem(id) {
@@ -139,13 +151,21 @@ function setPayment(m) {
   if (btn) btn.classList.add('active');
   persistOrder();
 }
+function setOrderType(t) {
+  orderMeta.order_type = t;
+  document.querySelectorAll('[id^="otype-"]').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('otype-' + t);
+  if (btn) btn.classList.add('active');
+  persistOrder();
+}
 function clearOrder() {
   order = {}; orderNotes = '';
-  orderMeta = { table: 1, cust: 2, payment: 'Cash', extra: 0 };
+  orderMeta = { table: 1, cust: 2, payment: 'Cash', order_type: 'Walk in', extra: 0 };
   document.getElementById('od-table').value = 1;
   document.getElementById('od-cust').value = 2;
   ['od-extra', 'order-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   setPayment('Cash');
+  setOrderType('Walk in');
   persistOrder();
   renderItems(); renderOrder();
 }
@@ -161,7 +181,7 @@ function buildOrderPayload(status) {
   const rate = (menuData.tax_rate ?? 5) / 100;
   const tax = Math.round(sub * rate);
   const extra = orderMeta.extra || 0;
-  return { table: orderMeta.table, cust: orderMeta.cust, payment: orderMeta.payment, extra, notes: orderNotes, sub, tax, total: sub + tax + extra, status, items: orderItems };
+  return { table: orderMeta.table, cust: orderMeta.cust, payment: orderMeta.payment, order_type: orderMeta.order_type || 'Walk in', extra, notes: orderNotes, sub, tax, total: sub + tax + extra, status, items: orderItems };
 }
 async function saveOrder() {
   if (!Object.keys(order).length) { showToast('No items in order'); return; }
@@ -185,6 +205,7 @@ async function doBill() {
       notes: payload.notes, items: itemsForReceipt, sub: payload.sub, tax: payload.tax,
       extra: payload.extra, total: payload.total,
       date: r.date, time: r.time, restaurant: menuData.restaurant,
+      cashier: menuData.cashier,
     }));
     showToast('Bill printed — Order #' + String(r.order_id).padStart(4, '0'));
     clearOrder();

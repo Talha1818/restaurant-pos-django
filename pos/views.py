@@ -79,7 +79,12 @@ def settings_page(request):
 # ─────────────── API: MENU ───────────────
 @login_required
 def api_menu(request):
-    cats = list(Category.objects.values('id', 'name', 'icon'))
+    cats = []
+    for c in Category.objects.all():
+        cats.append({
+            'id': c.id, 'name': c.name, 'icon': c.icon,
+            'image_url': request.build_absolute_uri(c.image.url) if c.image else None,
+        })
     items = []
     for item in MenuItem.objects.filter(is_active=True).select_related('category'):
         recipes = list(item.recipes.select_related('ingredient'))
@@ -95,6 +100,7 @@ def api_menu(request):
             'cat': item.category_id,
             'price': float(item.price),
             'icon': item.icon,
+            'image_url': request.build_absolute_uri(item.image.url) if item.image else None,
             'stock': avail,
         })
     ingredients = list(Ingredient.objects.values('id', 'name', 'unit', 'stock', 'low_threshold', 'icon'))
@@ -104,6 +110,7 @@ def api_menu(request):
         'categories': cats, 'items': items, 'ingredients': ingredients,
         'tax_rate': float(settings.tax_rate),
         'server_date': now.strftime('%A, %d %b'),
+        'cashier': request.user.get_full_name() or request.user.username,
         'restaurant': {
             'name': settings.restaurant_name,
             'phone': settings.phone,
@@ -134,6 +141,7 @@ def api_save_order(request):
         table=table,
         total_customers=data.get('cust', 1) or 1,
         payment_method=data.get('payment', 'Cash'),
+        order_type=data.get('order_type', 'Walk in'),
         extra_amount=decimal.Decimal(str(data.get('extra', 0))),
         special_notes=data.get('notes', ''),
         subtotal=decimal.Decimal(str(data.get('sub', 0))),
@@ -176,16 +184,16 @@ def api_orders(request):
             'table': o.table.number if o.table else None,
             'cust': o.total_customers,
             'payment': o.payment_method,
+            'order_type': o.order_type,
             'extra': float(o.extra_amount),
             'notes': o.special_notes,
             'sub': float(o.subtotal),
             'tax': float(o.tax),
             'total': float(o.total),
             'status': o.status,
-            # 'time': o.created_at.strftime('%I:%M %p'),
-            # 'date': o.created_at.strftime('%d %b'),
             'time': local_dt.strftime('%I:%M %p'),
             'date': local_dt.strftime('%d %b'),
+            'cashier': o.created_by.get_full_name() or o.created_by.username if o.created_by else '',
             'items': [{'name': i.menu_item.name, 'icon': i.menu_item.icon, 'qty': i.quantity, 'price': float(i.unit_price)} for i in o.items.all()],
         })
     return JsonResponse({'orders': result})
@@ -265,6 +273,7 @@ def api_edit_order(request, order_id):
 
     order.total_customers = data.get('cust', 1) or 1
     order.payment_method = data.get('payment', order.payment_method)
+    order.order_type = data.get('order_type', order.order_type)
     order.extra_amount = decimal.Decimal(str(data.get('extra', 0)))
     order.special_notes = data.get('notes', '')
     order.subtotal = decimal.Decimal(str(data.get('sub', 0)))
@@ -287,35 +296,47 @@ def api_edit_order(request, order_id):
 
 
 # ─────────────── API: EXPORT ORDERS TO EXCEL (CSV) ───────────────
+
 @login_required
 def api_export_orders(request):
     rng = request.GET.get('range', 'today')
     now = timezone.localtime()
+
     if rng == 'yesterday':
         day_start = (now - timezone.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    else:
+        day_end = day_start + timezone.timedelta(days=1)
+        orders = Order.objects.filter(created_at__gte=day_start, created_at__lt=day_end)
+    elif rng == 'this_month':
+        day_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        orders = Order.objects.filter(created_at__gte=day_start)
+    elif rng == 'last_month':
+        first_this = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        day_start = (first_this - timezone.timedelta(days=1)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        orders = Order.objects.filter(created_at__gte=day_start, created_at__lt=first_this)
+    elif rng == 'all':
+        orders = Order.objects.all()
+    else:  # today
         day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    day_end = day_start + timezone.timedelta(days=1)
+        day_end = day_start + timezone.timedelta(days=1)
+        orders = Order.objects.filter(created_at__gte=day_start, created_at__lt=day_end)
 
-    orders = (Order.objects.filter(created_at__gte=day_start, created_at__lt=day_end)
-              .select_related('table').prefetch_related('items__menu_item').order_by('created_at'))
+    orders = orders.select_related('table', 'created_by').prefetch_related('items__menu_item').order_by('created_at')
 
     response = HttpResponse(content_type='text/csv')
-    filename = f"nawab_orders_{day_start.strftime('%Y-%m-%d')}.csv"
+    filename = f"nawab_orders_{rng}_{now.strftime('%Y-%m-%d')}.csv"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     writer = csv.writer(response)
-    writer.writerow(['Order #', 'Date', 'Time', 'Table', 'Guests', 'Payment', 'Items', 'Subtotal', 'Tax', 'Extra', 'Total', 'Status'])
+    writer.writerow(['Order #', 'Date', 'Time', 'Table', 'Guests', 'Payment', 'Cashier', 'Items', 'Subtotal', 'Tax', 'Extra', 'Total', 'Status'])
     for o in orders:
         items_txt = ', '.join(f"{i.menu_item.name} x{i.quantity}" for i in o.items.all())
         local_dt = timezone.localtime(o.created_at)
         writer.writerow([
-            # f"{o.order_number:04d}", o.created_at.strftime('%Y-%m-%d'), o.created_at.strftime('%I:%M %p'),
             f"{o.order_number:04d}", local_dt.strftime('%Y-%m-%d'), local_dt.strftime('%I:%M %p'),
-            o.table.number if o.table else '', o.total_customers, o.payment_method, items_txt,
-            o.subtotal, o.tax, o.extra_amount, o.total, o.status,
+            o.table.number if o.table else '', o.total_customers, o.payment_method,
+            o.created_by.get_full_name() or o.created_by.username if o.created_by else '',
+            items_txt, o.subtotal, o.tax, o.extra_amount, o.total, o.status,
         ])
     return response
-
 
 # ─────────────── API: TABLES ───────────────
 @login_required
@@ -405,6 +426,12 @@ def api_reports(request):
     total_paid_orders = sum(pay_counts.values()) or 1
     payments = {m: round(pay_counts.get(m, 0) / total_paid_orders * 100) for m in ['Cash', 'Online']}
 
+    # order type breakdown
+    type_qs = qs.values('order_type').annotate(c=Count('order_number'))
+    type_counts = {t['order_type']: t['c'] for t in type_qs}
+    total_type_orders = sum(type_counts.values()) or 1
+    order_types = {t: round(type_counts.get(t, 0) / total_type_orders * 100) for t in ['Walk in', 'Delivery', 'Takeaway']}
+
     # order status breakdown (all orders placed in range, regardless of status)
     status_qs = Order.objects.filter(created_at__gte=start, created_at__lt=end).values('status').annotate(c=Count('order_number'))
     status_counts = {s['status']: s['c'] for s in status_qs}
@@ -433,6 +460,7 @@ def api_reports(request):
         'bars': bars, 'labels': labels,
         'top_dishes': top_dishes,
         'payments': payments,
+        'order_types': order_types,
         'order_status': order_status,
         'recent_orders': recent,
     })
@@ -448,42 +476,71 @@ def api_admin_items(request):
             items.append({
                 'id': item.id, 'name': item.name, 'cat': item.category.name, 'cat_id': item.category_id,
                 'price': float(item.price), 'icon': item.icon, 'stock': item.fallback_stock, 'recipe': recipe,
+                'image_url': request.build_absolute_uri(item.image.url) if item.image else None,
             })
         cats = list(Category.objects.values('id', 'name', 'icon'))
         ingredients = list(Ingredient.objects.values('id', 'name', 'unit', 'icon'))
         return JsonResponse({'items': items, 'categories': cats, 'ingredients': ingredients})
 
     if request.method == 'POST':
-        data = json.loads(request.body)
-        action = data.get('action')
-        if action == 'add':
-            cat = get_object_or_404(Category, id=data['cat_id'])
-            item = MenuItem.objects.create(name=data['name'], category=cat, price=data['price'], icon=data.get('icon', '🍽'), fallback_stock=data.get('stock', 20))
-            return JsonResponse({'success': True, 'id': item.id})
-        if action == 'edit':
-            item = get_object_or_404(MenuItem, id=data['id'])
-            item.name = data.get('name', item.name)
-            item.price = data.get('price', item.price)
-            item.icon = data.get('icon', item.icon)
-            if data.get('stock') is not None:
-                item.fallback_stock = data.get('stock')
-            cat = Category.objects.filter(id=data.get('cat_id')).first()
-            if cat: item.category = cat
-            item.save()
-            return JsonResponse({'success': True})
-        if action == 'delete':
-            get_object_or_404(MenuItem, id=data['id']).delete()
-            return JsonResponse({'success': True})
-        if action == 'set_recipe':
-            item = get_object_or_404(MenuItem, id=data['id'])
-            Recipe.objects.filter(menu_item=item).delete()
-            for row in data.get('recipe', []):
-                qty = float(row.get('qty') or 0)
-                if qty > 0:
-                    ing = Ingredient.objects.filter(id=row['ing']).first()
-                    if ing:
-                        Recipe.objects.create(menu_item=item, ingredient=ing, quantity=qty)
-            return JsonResponse({'success': True})
+        # Support both multipart (with image) and JSON
+        if request.content_type and 'multipart' in request.content_type:
+            data = request.POST
+            image_file = request.FILES.get('image')
+            action = data.get('action')
+            if action == 'add':
+                cat = get_object_or_404(Category, id=data['cat_id'])
+                item = MenuItem(name=data['name'], category=cat, price=data['price'],
+                                icon=data.get('icon', '🍽'), fallback_stock=data.get('stock', 0))
+                if image_file:
+                    item.image = image_file
+                item.save()
+                return JsonResponse({'success': True, 'id': item.id})
+            if action == 'edit':
+                item = get_object_or_404(MenuItem, id=data['id'])
+                item.name = data.get('name', item.name)
+                item.price = data.get('price', item.price)
+                item.icon = data.get('icon', item.icon)
+                if data.get('stock') is not None:
+                    item.fallback_stock = data.get('stock')
+                cat = Category.objects.filter(id=data.get('cat_id')).first()
+                if cat:
+                    item.category = cat
+                if image_file:
+                    item.image = image_file
+                item.save()
+                return JsonResponse({'success': True})
+        else:
+            data = json.loads(request.body)
+            action = data.get('action')
+            if action == 'add':
+                cat = get_object_or_404(Category, id=data['cat_id'])
+                item = MenuItem.objects.create(name=data['name'], category=cat, price=data['price'], icon=data.get('icon', '🍽'), fallback_stock=data.get('stock', 20))
+                return JsonResponse({'success': True, 'id': item.id})
+            if action == 'edit':
+                item = get_object_or_404(MenuItem, id=data['id'])
+                item.name = data.get('name', item.name)
+                item.price = data.get('price', item.price)
+                item.icon = data.get('icon', item.icon)
+                if data.get('stock') is not None:
+                    item.fallback_stock = data.get('stock')
+                cat = Category.objects.filter(id=data.get('cat_id')).first()
+                if cat: item.category = cat
+                item.save()
+                return JsonResponse({'success': True})
+            if action == 'delete':
+                get_object_or_404(MenuItem, id=data['id']).delete()
+                return JsonResponse({'success': True})
+            if action == 'set_recipe':
+                item = get_object_or_404(MenuItem, id=data['id'])
+                Recipe.objects.filter(menu_item=item).delete()
+                for row in data.get('recipe', []):
+                    qty = float(row.get('qty') or 0)
+                    if qty > 0:
+                        ing = Ingredient.objects.filter(id=row['ing']).first()
+                        if ing:
+                            Recipe.objects.create(menu_item=item, ingredient=ing, quantity=qty)
+                return JsonResponse({'success': True})
     return JsonResponse({'error': 'Bad request'}, status=400)
 
 
@@ -493,29 +550,56 @@ def api_admin_categories(request):
     if request.method == 'GET':
         cats = []
         for c in Category.objects.all():
-            cats.append({'id': c.id, 'name': c.name, 'icon': c.icon, 'count': c.items.filter(is_active=True).count()})
+            cats.append({
+                'id': c.id, 'name': c.name, 'icon': c.icon,
+                'count': c.items.filter(is_active=True).count(),
+                'image_url': request.build_absolute_uri(c.image.url) if c.image else None,
+            })
         return JsonResponse({'categories': cats})
     if request.method == 'POST':
-        data = json.loads(request.body)
-        action = data.get('action')
-        if action == 'add':
-            name = (data.get('name') or '').strip()
-            if not name:
-                return JsonResponse({'error': 'Name required'}, status=400)
-            cat = Category.objects.create(name=name, icon=data.get('icon') or '🍽')
-            return JsonResponse({'success': True, 'id': cat.id})
-        if action == 'edit':
-            cat = get_object_or_404(Category, id=data['id'])
-            cat.name = data.get('name', cat.name)
-            cat.icon = data.get('icon', cat.icon)
-            cat.save()
-            return JsonResponse({'success': True})
-        if action == 'delete':
-            cat = get_object_or_404(Category, id=data['id'])
-            if cat.items.exists():
-                return JsonResponse({'error': 'Category has menu items — move or delete them first'}, status=400)
-            cat.delete()
-            return JsonResponse({'success': True})
+        # Support multipart (with image) and JSON
+        if request.content_type and 'multipart' in request.content_type:
+            data = request.POST
+            image_file = request.FILES.get('image')
+            action = data.get('action')
+            if action == 'add':
+                name = (data.get('name') or '').strip()
+                if not name:
+                    return JsonResponse({'error': 'Name required'}, status=400)
+                cat = Category(name=name, icon=data.get('icon') or '🍽')
+                if image_file:
+                    cat.image = image_file
+                cat.save()
+                return JsonResponse({'success': True, 'id': cat.id})
+            if action == 'edit':
+                cat = get_object_or_404(Category, id=data['id'])
+                cat.name = data.get('name', cat.name)
+                cat.icon = data.get('icon', cat.icon)
+                if image_file:
+                    cat.image = image_file
+                cat.save()
+                return JsonResponse({'success': True})
+        else:
+            data = json.loads(request.body)
+            action = data.get('action')
+            if action == 'add':
+                name = (data.get('name') or '').strip()
+                if not name:
+                    return JsonResponse({'error': 'Name required'}, status=400)
+                cat = Category.objects.create(name=name, icon=data.get('icon') or '🍽')
+                return JsonResponse({'success': True, 'id': cat.id})
+            if action == 'edit':
+                cat = get_object_or_404(Category, id=data['id'])
+                cat.name = data.get('name', cat.name)
+                cat.icon = data.get('icon', cat.icon)
+                cat.save()
+                return JsonResponse({'success': True})
+            if action == 'delete':
+                cat = get_object_or_404(Category, id=data['id'])
+                if cat.items.exists():
+                    return JsonResponse({'error': 'Category has menu items — move or delete them first'}, status=400)
+                cat.delete()
+                return JsonResponse({'success': True})
     return JsonResponse({'error': 'Bad request'}, status=400)
 
 
@@ -621,3 +705,33 @@ def api_settings(request):
         s.save()
         return JsonResponse({'success': True})
     return JsonResponse({'error': 'Bad request'}, status=400)
+
+
+################################# ADDING NEW FUNCTION FOR API: GET ORDER DETAILS BY ID #################################
+import mimetypes
+from django.http import FileResponse, Http404
+from django.conf import settings
+
+def serve_media(request, path):
+    file_path = settings.MEDIA_ROOT / path
+    if not file_path.exists():
+        raise Http404
+    mime_type, _ = mimetypes.guess_type(str(file_path))
+    return FileResponse(open(file_path, 'rb'), content_type=mime_type or 'application/octet-stream')
+
+
+################################# LICENSE #################################
+def license_page(request):
+    from .licensing import check_license, save_license, days_remaining
+    valid, error, payload = check_license()
+    message = ''
+    if request.method == 'POST':
+        key = request.POST.get('license_key', '').strip()
+        ok, result = save_license(key)
+        if ok:
+            return redirect('pos:index')
+        message = result
+    return render(request, 'pos/license.html', {
+        'valid': valid, 'error': error, 'message': message,
+        'payload': payload, 'days_left': days_remaining(payload),
+    })
